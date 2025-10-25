@@ -32,8 +32,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: test
     if: github.ref == 'refs/heads/main'
-    env:
-      IMAGE_NAME: ${{ env.IMAGE_NAME }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -60,9 +58,9 @@ jobs:
         run: |
           # If ARTIFACT_REGISTRY_REPO is provided, push to Artifact Registry; otherwise push to GCR
           if [ -n "${{ secrets.ARTIFACT_REGISTRY_REPO }}" ]; then
-            IMAGE="${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/${{ secrets.ARTIFACT_REGISTRY_REPO }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+            IMAGE="${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/${{ secrets.ARTIFACT_REGISTRY_REPO }}/testservice:${{ github.sha }}"
           else
-            IMAGE="gcr.io/${{ secrets.GCP_PROJECT }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+            IMAGE="gcr.io/${{ secrets.GCP_PROJECT }}/testservice:${{ github.sha }}"
           fi
           echo "Building and pushing $IMAGE"
           docker build -t "$IMAGE" .
@@ -74,7 +72,7 @@ jobs:
         uses: google-github-actions/deploy-cloudrun@v0
         with:
           service: ${{ secrets.CLOUD_RUN_SERVICE }}
-          image: gcr.io/${{ secrets.GCP_PROJECT }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          image: gcr.io/${{ secrets.GCP_PROJECT }}/testservice:${{ github.sha }}
           region: ${{ secrets.CLOUD_RUN_REGION }}
           project_id: ${{ secrets.GCP_PROJECT }}
         # Deployment will fail if required secrets are not set; this is intentional so you can configure secrets in repository settings.

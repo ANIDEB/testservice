@@ -50,18 +50,13 @@ jobs:
           service_account_key: ${{ secrets.GCP_SA_KEY }}
           project_id: ${{ secrets.GCP_PROJECT }}
 
-      - name: Configure Docker for GCR
+      - name: Configure Docker for Artifact Registry
         run: |
-          gcloud auth configure-docker --quiet
+          gcloud auth configure-docker ${{ secrets.CLOUD_RUN_REGION }}-docker.pkg.dev --quiet
 
-      - name: Build and push Docker image to Container Registry (gcr.io)
+      - name: Build and push Docker image to Artifact Registry
         run: |
-          # If ARTIFACT_REGISTRY_REPO is provided, push to Artifact Registry; otherwise push to GCR
-          if [ -n "${{ secrets.ARTIFACT_REGISTRY_REPO }}" ]; then
-            IMAGE="${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/${{ secrets.ARTIFACT_REGISTRY_REPO }}/testservice:${{ github.sha }}"
-          else
-            IMAGE="gcr.io/${{ secrets.GCP_PROJECT }}/testservice:${{ github.sha }}"
-          fi
+          IMAGE="${{ secrets.CLOUD_RUN_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/testservice/testservice:${{ github.sha }}"
           echo "Building and pushing $IMAGE"
           docker build -t "$IMAGE" .
           docker push "$IMAGE"
@@ -72,7 +67,7 @@ jobs:
         uses: google-github-actions/deploy-cloudrun@v0
         with:
           service: ${{ secrets.CLOUD_RUN_SERVICE }}
-          image: gcr.io/${{ secrets.GCP_PROJECT }}/testservice:${{ github.sha }}
+          image: ${{ secrets.CLOUD_RUN_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/testservice/testservice:${{ github.sha }}
           region: ${{ secrets.CLOUD_RUN_REGION }}
           project_id: ${{ secrets.GCP_PROJECT }}
         # Deployment will fail if required secrets are not set; this is intentional so you can configure secrets in repository settings.

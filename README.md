@@ -69,5 +69,50 @@ The workflow at `.github/workflows/ci-cd.yml` will:
 
 To create `GCP_SA_KEY`, follow the Google Cloud docs to create a service account with the `roles/run.admin` and `roles/iam.serviceAccountUser` roles and download the JSON key. Add the JSON content to the `GCP_SA_KEY` secret.
 
+### Step-by-step: create service account and set GitHub secrets
+
+1. Enable APIs in your GCP project:
+
+```bash
+gcloud services enable run.googleapis.com containerregistry.googleapis.com
+```
+
+2. Create a service account and grant it the required roles:
+
+```bash
+PROJECT=your-gcp-project-id
+SA_NAME=github-actions-deployer
+gcloud iam service-accounts create $SA_NAME --project $PROJECT --display-name "GH Actions deployer"
+
+# Grant roles required to deploy to Cloud Run and push images
+gcloud projects add-iam-policy-binding $PROJECT \
+  --member="serviceAccount:$SA_NAME@$PROJECT.iam.gserviceaccount.com" \
+  --role="roles/run.admin"
+gcloud projects add-iam-policy-binding $PROJECT \
+  --member="serviceAccount:$SA_NAME@$PROJECT.iam.gserviceaccount.com" \
+  --role="roles/iam.serviceAccountUser"
+gcloud projects add-iam-policy-binding $PROJECT \
+  --member="serviceAccount:$SA_NAME@$PROJECT.iam.gserviceaccount.com" \
+  --role="roles/storage.admin"
+
+# (Optional) If you're using Artifact Registry instead of GCR, add the appropriate roles.
+```
+
+3. Create and download a JSON key for the service account:
+
+```bash
+gcloud iam service-accounts keys create key.json \
+  --iam-account=$SA_NAME@$PROJECT.iam.gserviceaccount.com --project $PROJECT
+```
+
+4. In your GitHub repository settings → Secrets → Actions, add the following secrets:
+
+- `GCP_SA_KEY` — the contents of `key.json` (paste the whole JSON)
+- `GCP_PROJECT` — your GCP project id
+- `CLOUD_RUN_SERVICE` — desired Cloud Run service name (e.g., `testservice`)
+- `CLOUD_RUN_REGION` — region (e.g., `us-central1`)
+
+After that, pushes to `main` will trigger the workflow which builds, pushes the image to `gcr.io/<PROJECT>/testservice:<sha>`, and deploys it to Cloud Run.
+
 ## Notes
 - This is intentionally minimal. Consider adding request logging, structured logs, and metrics when you extend it.

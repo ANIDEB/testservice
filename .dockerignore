@@ -1,0 +1,6 @@
+bin/
+*.log
+*.tmp
+vendor/
+*.swp
+**/.git

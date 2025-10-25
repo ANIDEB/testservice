@@ -64,6 +64,7 @@ jobs:
           DOCKER_BUILDKIT: 1
 
       - name: Deploy to Cloud Run
+        id: deploy
         uses: google-github-actions/deploy-cloudrun@v0
         with:
           service: ${{ secrets.CLOUD_RUN_SERVICE }}
@@ -72,3 +73,14 @@ jobs:
           project_id: ${{ secrets.GCP_PROJECT }}
           allow_unauthenticated: true
         # Deployment will fail if required secrets are not set; this is intentional so you can configure secrets in repository settings.
+
+      - name: Smoke test health endpoint
+        run: |
+          URL="${{ steps.deploy.outputs.url }}"
+          echo "Testing $URL/readyz"
+          code=$(curl -s -o /dev/null -w "%{http_code}" "$URL/readyz")
+          if [ "$code" != "200" ]; then
+            echo "Smoke test failed with HTTP $code at $URL/readyz"
+            exit 1
+          fi
+          echo "Smoke test passed"

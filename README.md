@@ -3,7 +3,7 @@
 This repository contains a minimal Go HTTP service ready to run on Cloud Run. It includes a Dockerfile, unit tests, a GitHub Actions workflow for CI (and optional deploy), and local run instructions.
 
 ## What you get
-- `main.go` + `handlers.go` – simple HTTP server with `/` and `/healthz` endpoints
+- `main.go` + `handlers.go` – simple HTTP server with `/` and health endpoints (`/health`, `/readyz`, `/livez`, `/_ah/health`)
 - `Dockerfile` – multi-stage build for a small runtime image
 - `.github/workflows/ci-cd.yml` – runs tests and can deploy to Cloud Run when secrets are set
 - `Makefile` – helpers for build, run, docker-build, test
@@ -33,7 +33,18 @@ docker build -t testservice:local .
 docker run -p 8080:8080 testservice:local
 ```
 
-Then open http://localhost:8080/ and http://localhost:8080/healthz
+Then open http://localhost:8080/ and http://localhost:8080/health
+
+## Health endpoints
+
+The service exposes several health endpoints that return `ok` with HTTP 200:
+
+- `/health` (recommended)
+- `/readyz`
+- `/livez`
+- `/_ah/health`
+
+Note: On Cloud Run's default domain (`*.a.run.app`), the exact path `/healthz` (without trailing slash) returns HTTP 404 from Google Frontend before reaching your container. Prefer the endpoints above. If you must use `/healthz`, add a trailing slash (`/healthz/`), but using `/health` or `/readyz` is recommended.
 
 ## Deploy to Cloud Run (manual)
 
@@ -61,6 +72,7 @@ Replace `PROJECT-ID` and region as needed.
 The workflow at `.github/workflows/ci-cd.yml` will:
 - Run `go test` and `go vet` on PRs and pushes to `main`.
 - On successful push to `main`, it builds the Docker image, pushes to Artifact Registry, and deploys to Cloud Run (when secrets are configured).
+- After deploy, it runs a simple smoke test against the `/readyz` endpoint and fails the workflow if it does not return HTTP 200.
 
 **Required repository secrets:**
 

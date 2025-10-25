@@ -70,4 +70,5 @@ jobs:
           image: ${{ secrets.CLOUD_RUN_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/testservice/testservice:${{ github.sha }}
           region: ${{ secrets.CLOUD_RUN_REGION }}
           project_id: ${{ secrets.GCP_PROJECT }}
+          allow_unauthenticated: true
         # Deployment will fail if required secrets are not set; this is intentional so you can configure secrets in repository settings.

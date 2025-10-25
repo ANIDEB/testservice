@@ -114,5 +114,38 @@ gcloud iam service-accounts keys create key.json \
 
 After that, pushes to `main` will trigger the workflow which builds, pushes the image to `gcr.io/<PROJECT>/testservice:<sha>`, and deploys it to Cloud Run.
 
+### Artifact Registry (optional, recommended)
+
+If you prefer Artifact Registry (recommended for new projects), configure the workflow to push there by adding the `ARTIFACT_REGISTRY_REPO` secret (and ensure `GCP_REGION` is set as well). When `ARTIFACT_REGISTRY_REPO` is present the workflow will push to:
+
+```
+${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT}/${ARTIFACT_REGISTRY_REPO}/testservice:<sha>
+```
+
+Steps to create an Artifact Registry repository and grant permissions:
+
+```bash
+PROJECT=your-gcp-project-id
+REGION=us-central1
+REPO=testservice-repo
+
+# Create a Docker repository in Artifact Registry
+gcloud artifacts repositories create $REPO --repository-format=docker --location=$REGION --description="Docker repo for testservice" --project=$PROJECT
+
+# Grant the service account permission to write images
+gcloud projects add-iam-policy-binding $PROJECT \
+  --member="serviceAccount:github-actions-deployer@$PROJECT.iam.gserviceaccount.com" \
+  --role="roles/artifactregistry.writer"
+
+# (Also ensure roles/storage.admin or necessary permissions for pushing images are granted as per your setup.)
+```
+
+Add the following repository secrets in GitHub:
+
+- `ARTIFACT_REGISTRY_REPO` — the Artifact Registry repo name (e.g., `testservice-repo`)
+- `GCP_REGION` — region used for the Artifact Registry repo (e.g., `us-central1`)
+
+With those secrets present the Actions workflow will push to Artifact Registry and deploy the pushed image to Cloud Run.
+
 ## Notes
 - This is intentionally minimal. Consider adding request logging, structured logs, and metrics when you extend it.

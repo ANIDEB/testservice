@@ -58,10 +58,15 @@ jobs:
 
       - name: Build and push Docker image to Container Registry (gcr.io)
         run: |
-          IMAGE=gcr.io/${{ secrets.GCP_PROJECT }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          # If ARTIFACT_REGISTRY_REPO is provided, push to Artifact Registry; otherwise push to GCR
+          if [ -n "${{ secrets.ARTIFACT_REGISTRY_REPO }}" ]; then
+            IMAGE="${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/${{ secrets.ARTIFACT_REGISTRY_REPO }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          else
+            IMAGE="gcr.io/${{ secrets.GCP_PROJECT }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          fi
           echo "Building and pushing $IMAGE"
-          docker build -t $IMAGE .
-          docker push $IMAGE
+          docker build -t "$IMAGE" .
+          docker push "$IMAGE"
         env:
           DOCKER_BUILDKIT: 1
 

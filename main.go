@@ -13,7 +13,12 @@ import (
 func main() {
     mux := http.NewServeMux()
     mux.HandleFunc("/", helloHandler)
+    // Health endpoints (Cloud Run may not forward /healthz externally)
     mux.HandleFunc("/healthz", healthHandler)
+    mux.HandleFunc("/health", healthHandler)
+    mux.HandleFunc("/readyz", healthHandler)
+    mux.HandleFunc("/livez", healthHandler)
+    mux.HandleFunc("/_ah/health", healthHandler)
 
     srv := &http.Server{
         Addr:    ":" + getPort(),

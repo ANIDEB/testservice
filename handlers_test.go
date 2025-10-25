@@ -25,15 +25,18 @@ func TestHelloHandler(t *testing.T) {
 }
 
 func TestHealthHandler(t *testing.T) {
-    req := httptest.NewRequest("GET", "/healthz", nil)
-    rr := httptest.NewRecorder()
+    paths := []string{"/healthz", "/health", "/readyz", "/livez", "/_ah/health"}
+    for _, p := range paths {
+        req := httptest.NewRequest("GET", p, nil)
+        rr := httptest.NewRecorder()
 
-    healthHandler(rr, req)
+        healthHandler(rr, req)
 
-    if rr.Code != http.StatusOK {
-        t.Fatalf("expected status 200; got %d", rr.Code)
-    }
-    if rr.Body.String() != "ok" {
-        t.Fatalf("expected body 'ok', got %q", rr.Body.String())
+        if rr.Code != http.StatusOK {
+            t.Fatalf("%s: expected status 200; got %d", p, rr.Code)
+        }
+        if rr.Body.String() != "ok" {
+            t.Fatalf("%s: expected body 'ok', got %q", p, rr.Body.String())
+        }
     }
 }
